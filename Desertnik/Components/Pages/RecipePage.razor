@@ -1,0 +1,127 @@
+﻿@page "/Recipe"
+@rendermode InteractiveServer
+@inject RecipeService recipeService
+<h1>Recepti</h1>
+
+@if (recipes == null)
+{
+	<p><em>Loading...</em></p>
+}
+else
+{
+	<button @onclick="@Add" class="btn btn-success">Dodaj recept</button>
+	<table class="table">
+		<thead>
+			<tr>
+				<th>ID</th>
+				<th>Naziv recepta</th>
+				<th>Opis recepta</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach (var item in recipes)
+			{
+				<tr @onclick="@(() => Show(item.Id))">
+					<td>@item.Id</td>
+					<td>@item.Name</td>
+					<td>@item.Description</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+}
+@if (mode == MODE.Add)
+{
+	<input placeholder="Naziv recepta" @bind="@name" />
+	<br />
+	<input placeholder="Opis recepta" @bind="@description" />
+	<br />
+	<button @onclick="@Insert" class="btn btn-warning">Spremi recept</button>
+}
+@if (recipes != null && mode == MODE.EditDelete)
+{
+	<input type="hidden" @bind="@id" />
+	<br />
+	<input placeholder="Naziv recepta" @bind="@name" />
+	<br />
+	<input placeholder="Opis recepta" @bind="@description" />
+	<br />
+	<button @onclick="@Update" class="btn btn-primary">Ažuriraj recept</button>
+	<span>&nbsp;&nbsp;&nbsp;&nbsp;</span> // RAZMACI
+	<button @onclick="@Delete" class="btn btn-danger">Obriši recept</button>
+}
+@code {
+
+	string id;
+	string name;
+	string description;
+	Recipe recipe;
+	private enum MODE { None, Add, EditDelete };
+	MODE mode = MODE.None;
+
+	List<Recipe> recipes;
+	protected override async Task OnInitializedAsync()
+	{
+		await Load();
+	}
+	protected async Task Load()
+	{
+		recipes = await recipeService.GetRecipesAsync();
+	}
+
+	protected void Add()
+	{
+		ClearFields();
+		mode = MODE.Add;
+	}
+	protected void ClearFields()
+	{
+		id = string.Empty;
+		name = string.Empty;
+		description = string.Empty;
+	}
+
+	protected async Task Insert()
+	{
+		Recipe r = new Recipe()
+			{
+				Id = Guid.NewGuid().ToString(),
+				Name = name,
+				Description = description
+			};
+		await recipeService.InsertRecipeAsync(r);
+		ClearFields();
+		await Load();
+		mode = MODE.None;
+	}
+
+	protected async Task Show(string id)
+	{
+		recipe = await recipeService.GetRecipeByIdAsync(id);
+		id = recipe.Id;
+		name = recipe.Name;
+		description = recipe.Description;
+		mode = MODE.EditDelete;
+	}
+
+	protected async Task Update()
+	{
+		Recipe r = new Recipe()
+			{
+				Id = recipe.Id,
+				Name = name,
+				Description = description
+			};
+		await recipeService.UpdateRecipeAsync(recipe.Id, r);
+		ClearFields();
+		await Load();
+		mode = MODE.None;
+	}
+	protected async Task Delete()
+	{
+		await recipeService.DeleteRecipeAsync(recipe.Id);
+		ClearFields();
+		await Load();
+		mode = MODE.None;
+	}
+}
