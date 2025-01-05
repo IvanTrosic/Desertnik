@@ -16,15 +16,17 @@ else
 				<th>ID</th>
 				<th>Naziv recepta</th>
 				<th>Opis recepta</th>
+				<th>Sastojci</th>
 			</tr>
 		</thead>
 		<tbody>
-			@foreach (var item in recipes)
+			@foreach (var recipe in recipes)
 			{
-				<tr @onclick="@(() => Show(item.Id))">
-					<td>@item.Id</td>
-					<td>@item.Name</td>
-					<td>@item.Description</td>
+				<tr @onclick="@(() => Show(recipe.Id))">
+					<td>@recipe.Id</td>
+					<td>@recipe.Name</td>
+					<td>@recipe.Description</td>
+					<td>@string.Join(", ", recipe.Ingredients.Select(i => i.Name))</td>
 				</tr>
 			}
 		</tbody>

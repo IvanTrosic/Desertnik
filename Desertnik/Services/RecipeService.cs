@@ -1,4 +1,5 @@
 ﻿using Desertnik.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Desertnik.Services
 {
@@ -11,7 +12,7 @@ namespace Desertnik.Services
 		}
 		public async Task<List<Recipe>> GetRecipesAsync()
 		{
-			var result = _context.Recipes;
+			var result = _context.Recipes.Include(recipe => recipe.Ingredients);
 			return await Task.FromResult(result.ToList());
 		}
 		public async Task<Recipe> GetRecipeByIdAsync(string id)

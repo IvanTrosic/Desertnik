@@ -8,5 +8,6 @@ namespace Desertnik.Data
 		base(options)
 		{ }
 		public DbSet<Recipe> Recipes { get; set; }
+		public DbSet<Ingredient> Ingredients { get; set; }
 	}
 }
