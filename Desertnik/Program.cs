@@ -11,6 +11,7 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string DefaultConnString not found.")));
 builder.Services.AddScoped<RecipeService>();
+builder.Services.AddScoped<IngredientService>();
 
 var app = builder.Build();
 
