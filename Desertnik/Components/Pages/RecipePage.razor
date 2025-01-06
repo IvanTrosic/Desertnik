@@ -1,7 +1,46 @@
 ﻿@page "/Recipe"
 @rendermode InteractiveServer
 @inject RecipeService recipeService
+@inject IngredientService ingredientService
 <h1>Recepti</h1>
+
+<div>
+	<label>Pretraži po nazivu:</label>
+	<input @bind="searchTerm" placeholder="Naziv recepta..." />
+</div>
+
+<div>
+	<label>Pretraži po sastojcima:</label>
+	<select multiple @onchange="OnIngredientSelectionChanged">
+		@foreach (var ingredient in availableIngredients)
+		{
+			<option value="@ingredient.Id" selected="@(selectedIngredientIds.Contains(ingredient.Id))">@ingredient.Name</option>
+		}
+	</select>
+</div>
+
+<div>
+	<label>Pretraži po ocjeni:</label>
+	<input type="range" min="0" max="10" step="0.1" @bind="minScore" />
+	<span>@minScore:0.0</span>
+</div>
+
+<div>
+	<label>Pretraži po datumu:</label>
+	<div>
+		<label>Od:</label>
+		<input type="date" @bind="fromDate" />
+	</div>
+	<div>
+		<label>Do:</label>
+		<input type="date" @bind="toDate" />
+	</div>
+</div>
+
+<button @onclick="SearchRecipes">Pretraži</button>
+
+<br />
+<br />
 
 @if (recipes == null)
 {
@@ -61,7 +100,18 @@ else
 	private enum MODE { None, Add, EditDelete };
 	MODE mode = MODE.None;
 
-	List<Recipe> recipes;
+	List<Recipe> recipes = new();
+
+	private List<Ingredient> availableIngredients = new();
+	private List<string> selectedIngredientIds = new(); // Koji su sastojci odabrani
+
+	private double minScore = 0.0;
+
+	private DateTime? fromDate;
+	private DateTime? toDate;
+
+	private string searchTerm = string.Empty;
+
 	protected override async Task OnInitializedAsync()
 	{
 		await Load();
@@ -69,6 +119,18 @@ else
 	protected async Task Load()
 	{
 		recipes = await recipeService.GetRecipesAsync();
+		availableIngredients = await ingredientService.GetIngredientsAsync();
+	}
+
+	protected async Task SearchRecipes()
+	{
+		recipes = await recipeService.SearchRecipesAsync(searchTerm, fromDate, toDate, selectedIngredientIds, minScore > 0 ? minScore : null);
+	}
+
+	private void OnIngredientSelectionChanged(ChangeEventArgs e)
+	{
+		// Multi select specifično zato što je ID string
+		selectedIngredientIds = (e.Value as string[]).ToList();
 	}
 
 	protected void Add()

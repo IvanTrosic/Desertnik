@@ -49,5 +49,40 @@ namespace Desertnik.Services
 		{
 			return _context.Recipes.Any(e => e.Id == id);
 		}
+
+		public async Task<List<Recipe>> SearchRecipesAsync(string? name, DateTime? fromDate, DateTime? toDate, List<string>? ingredientIds, double? minScore)
+		{
+			var query = _context.Recipes.AsQueryable();
+
+			// Po nazivu
+			if (!string.IsNullOrEmpty(name))
+			{
+				query = query.Where(r => r.Name.Contains(name));
+			}
+
+			// Po datumu
+			if (fromDate.HasValue)
+			{ 
+				query = query.Where(r => r.CreatedDate >= fromDate.Value);
+			}
+			if (toDate.HasValue)
+			{ 
+				query = query.Where(r => r.CreatedDate <= toDate.Value);
+			}
+
+			// Po sastojcima
+			if (ingredientIds != null && ingredientIds.Any())
+			{
+				query = query.Where(r => r.Ingredients.Any(i => ingredientIds.Contains(i.Id)));
+			}
+
+			// Po ocjenama
+			if (minScore.HasValue)
+			{
+				query = query.Where(r => r.AverageScore >= minScore.Value);
+			}
+
+			return await query.Include(r => r.Ingredients).ToListAsync();
+		}
 	}
 }
