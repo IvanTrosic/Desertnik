@@ -1,0 +1,19 @@
+﻿@page "/logout"
+@inject NavigationManager navigationManager
+
+<div>
+	<span>Odjava uspješna.</span>
+</div>
+
+@code {
+	[CascadingParameter]
+	public HttpContext HttpContext { get; set; }
+
+	protected override async Task OnInitializedAsync(){
+		await base.OnInitializedAsync();
+		if(HttpContext.User.Identity.IsAuthenticated){
+			await HttpContext.SignOutAsync();
+			navigationManager.NavigateTo("/logout", true);
+		}
+	}
+}

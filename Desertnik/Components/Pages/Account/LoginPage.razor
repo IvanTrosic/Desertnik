@@ -1,0 +1,48 @@
+﻿@page "/login"
+@inject UserService userService
+@inject NavigationManager navigationManager
+
+<h3>Prijava</h3>
+<div>
+    <div>
+        <EditForm Model="@LoginModel" OnValidSubmit="Authenticate" FormName="LoginForm">
+            <DataAnnotationsValidator />
+            <div>
+                <label>Korisničko ime</label>
+                <InputText @bind-Value="LoginModel.Username" class="form-control" placeholder="Korisničko ime"/>
+                <ValidationMessage For="() => LoginModel.Username"/>
+            </div>
+            <div>
+                <label>Lozinka</label>
+                <InputText @bind-Value="LoginModel.Password" class="form-control" placeholder="Lozinka" type="password" />
+                <ValidationMessage For="() => LoginModel.Password" />
+            </div>
+            <div>
+                <span>@errorMessage</span>
+            </div>
+            <div>
+                <button type="submit">Prijava</button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
+    [SupplyParameterFromForm]
+    public AccessModel LoginModel { get; set; } = new();
+
+    private string? errorMessage;
+
+    private async Task Authenticate(){
+        var principal = await userService.LoginAsync(LoginModel.Username, LoginModel.Password);
+        if(principal == null){
+            errorMessage = "Korisnik s upisanim korisničkim imenom i lozinkom nije pronađen";
+            return;
+        }
+        await HttpContext.SignInAsync(principal);
+        navigationManager.NavigateTo("/");
+    }
+}

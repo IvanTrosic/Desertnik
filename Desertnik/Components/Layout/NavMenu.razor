@@ -1,4 +1,6 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">Desertnik</a>
     </div>
@@ -15,10 +17,26 @@
         </div>
 
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="recipe">
+            <NavLink class="nav-link" href="recipes">
                 <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Recepti
             </NavLink>
         </div>
+
+        <AuthorizeView Roles="Admin">
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="ingredients">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Sastojci
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="users">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Korisnici
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+        
     </nav>
 </div>
 

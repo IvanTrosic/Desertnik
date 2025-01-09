@@ -1,4 +1,4 @@
-﻿@page "/Recipe"
+﻿@page "/recipes"
 @rendermode InteractiveServer
 @inject RecipeService recipeService
 @inject IngredientService ingredientService
@@ -92,6 +92,9 @@ else
 	<button @onclick="@Delete" class="btn btn-danger">Obriši recept</button>
 }
 @code {
+
+	[CascadingParameter]
+	private Task<AuthenticationState> authenticationStateTask { get; set; }
 
 	string id;
 	string name;
