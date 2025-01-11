@@ -1,0 +1,59 @@
+﻿@page "/users"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+@inject UserService userService
+@inject NavigationManager navigationManager
+
+<h1 class="text-center mt-4">Upravljanje korisnicima</h1>
+<div class="container mt-4">
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Korisničko ime</th>
+                    <th>Rola</th>
+                    <th>Uredi/Obriši</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in users)
+                {
+                    <tr>
+                        <td>@user.Username</td>
+                        <td>
+                            <select class="form-select form-select-sm" @bind="user.Role">
+                                <option>User</option>
+                                <option>Admin</option>
+                            </select>
+                        </td>
+                        <td>
+                            <button class="btn btn-success btn-sm" @onclick="() => UpdateUser(user)">Uredi</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => DeleteUser(user.Id)">Obriši</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private List<User> users = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        users = await userService.GetAllUsersAsync();
+    }
+
+    private async Task UpdateUser(User user)
+    {
+        await userService.UpdateUserAsync(user.Id, user.Username, user.Role);
+    }
+
+    private async Task DeleteUser(string userId)
+    {
+        await userService.DeleteUserAsync(userId);
+        users = await userService.GetAllUsersAsync();
+    }
+}

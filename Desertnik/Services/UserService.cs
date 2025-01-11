@@ -1,10 +1,8 @@
 ﻿using Desertnik.Data;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
-using System.Security.Cryptography;
 
 namespace Desertnik.Services
 {
@@ -36,7 +34,8 @@ namespace Desertnik.Services
 		public async Task<ClaimsPrincipal?> LoginAsync(string username, string password)
 		{
 			var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
-			if (user == null || new PasswordHasher<string>().VerifyHashedPassword(username, user.Password, password) == PasswordVerificationResult.Failed) { 
+			if (user == null || new PasswordHasher<string>().VerifyHashedPassword(username, user.Password, password) == PasswordVerificationResult.Failed)
+			{
 				return null;
 			}
 
@@ -51,7 +50,32 @@ namespace Desertnik.Services
 
 			return principal;
 		}
+
+		public async Task<List<User>> GetAllUsersAsync()
+		{
+			return await _context.Users.ToListAsync();
+		}
+
+		public async Task UpdateUserAsync(string userId, string username, string role)
+		{
+			var user = await _context.Users.FindAsync(userId);
+			if (user != null)
+			{
+				user.Username = username;
+				user.Role = role;
+				_context.Users.Update(user);
+				await _context.SaveChangesAsync();
+			}
+		}
+
+		public async Task DeleteUserAsync(string userId)
+		{
+			var user = await _context.Users.FindAsync(userId);
+			if (user != null)
+			{
+				_context.Users.Remove(user);
+				await _context.SaveChangesAsync();
+			}
+		}
 	}
-
-
 }
