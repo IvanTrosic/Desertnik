@@ -20,7 +20,9 @@
                 @foreach (var user in users)
                 {
                     <tr>
-                        <td>@user.Username</td>
+                        <td>
+                            <input class="form-control form-control-sm" @bind="user.Username" />
+                        </td>
                         <td>
                             <select class="form-select form-select-sm" @bind="user.Role">
                                 <option>User</option>
@@ -49,6 +51,7 @@
     private async Task UpdateUser(User user)
     {
         await userService.UpdateUserAsync(user.Id, user.Username, user.Role);
+        users = await userService.GetAllUsersAsync();
     }
 
     private async Task DeleteUser(string userId)
