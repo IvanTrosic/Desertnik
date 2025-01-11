@@ -2,193 +2,131 @@
 @rendermode InteractiveServer
 @inject RecipeService recipeService
 @inject IngredientService ingredientService
-<h1>Recepti</h1>
+@inject NavigationManager navigationManager
+@inject AuthenticationStateProvider authenticationStateProvider
 
-<div>
-	<label>Pretraži po nazivu:</label>
-	<input @bind="searchTerm" placeholder="Naziv recepta..." />
+<h1 class="text-center mt-4">Recepti</h1>
+
+<div class="container mt-3">
+    <div class="row">
+        <div class="col-md-6">
+            <label>Naziv</label>
+            <input class="form-control mb-3" @bind="searchTerm" placeholder="Pretražite po nazivu" />
+        </div>
+        <div class="col-md-6">
+            <label>Sastojci</label>
+            <select multiple class="form-select" @onchange="OnIngredientSelectionChanged">
+                @foreach (var ingredient in availableIngredients)
+                {
+                    <option value="@ingredient.Id">@ingredient.Name</option>
+                }
+            </select>
+        </div>
+    </div>
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <label>Od:</label>
+            <input type="date" class="form-control" @bind="fromDate" />
+        </div>
+        <div class="col-md-6">
+            <label>Do:</label>
+            <input type="date" class="form-control" @bind="toDate" />
+        </div>
+    </div>
+    <div class="mt-4">
+        <button class="btn btn-primary" @onclick="SearchRecipes">Pretraži</button>
+        <AuthorizeView Roles="Admin, User">
+            <button class="btn btn-success ms-2" @onclick="Add">Dodaj recept</button>
+        </AuthorizeView>
+    </div>
+
+    @if (recipes == null)
+    {
+        <div class="alert alert-info mt-4">Niti jedan recept nije pronađen!</div>
+    }
+    else
+    {
+        <div class="row mt-4">
+            @foreach (var recipe in recipes)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">@recipe.Name</h5>
+                            <p class="card-text">@recipe.Description</p>
+                            <p class="card-text">
+                                <strong>Sastojci:</strong>
+                                @string.Join(", ", recipe.Ingredients.Select(i => i.Name))
+                            </p>
+                            <AuthorizeView Roles="User">
+                                @if (recipeOwnership.ContainsKey(recipe.Id) && recipeOwnership[recipe.Id])
+                                {
+                                    <button class="btn btn-warning btn-sm" @onclick="() => EditRecipe(recipe.Id)">Uredi</button>
+                                }
+                            </AuthorizeView>
+                            <AuthorizeView Roles="Admin">      
+                                    <button class="btn btn-warning btn-sm" @onclick="() => EditRecipe(recipe.Id)">Uredi</button>
+                            </AuthorizeView>
+
+                            <AuthorizeView Roles="Admin">
+                                <button class="btn btn-danger btn-sm ms-2" @onclick="() => DeleteRecipe(recipe.Id)">Obriši</button>
+                            </AuthorizeView>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
 </div>
 
-<div>
-	<label>Pretraži po sastojcima:</label>
-	<select multiple @onchange="OnIngredientSelectionChanged">
-		@foreach (var ingredient in availableIngredients)
-		{
-			<option value="@ingredient.Id" selected="@(selectedIngredientIds.Contains(ingredient.Id))">@ingredient.Name</option>
-		}
-	</select>
-</div>
-
-<div>
-	<label>Pretraži po ocjeni:</label>
-	<input type="range" min="0" max="10" step="0.1" @bind="minScore" />
-	<span>@minScore:0.0</span>
-</div>
-
-<div>
-	<label>Pretraži po datumu:</label>
-	<div>
-		<label>Od:</label>
-		<input type="date" @bind="fromDate" />
-	</div>
-	<div>
-		<label>Do:</label>
-		<input type="date" @bind="toDate" />
-	</div>
-</div>
-
-<button @onclick="SearchRecipes">Pretraži</button>
-
-<br />
-<br />
-
-@if (recipes == null)
-{
-	<p><em>Loading...</em></p>
-}
-else
-{
-	<button @onclick="@Add" class="btn btn-success">Dodaj recept</button>
-	<table class="table">
-		<thead>
-			<tr>
-				<th>ID</th>
-				<th>Naziv recepta</th>
-				<th>Opis recepta</th>
-				<th>Sastojci</th>
-			</tr>
-		</thead>
-		<tbody>
-			@foreach (var recipe in recipes)
-			{
-				<tr @onclick="@(() => Show(recipe.Id))">
-					<td>@recipe.Id</td>
-					<td>@recipe.Name</td>
-					<td>@recipe.Description</td>
-					<td>@string.Join(", ", recipe.Ingredients.Select(i => i.Name))</td>
-				</tr>
-			}
-		</tbody>
-	</table>
-}
-@if (mode == MODE.Add)
-{
-	<input placeholder="Naziv recepta" @bind="@name" />
-	<br />
-	<input placeholder="Opis recepta" @bind="@description" />
-	<br />
-	<button @onclick="@Insert" class="btn btn-warning">Spremi recept</button>
-}
-@if (recipes != null && mode == MODE.EditDelete)
-{
-	<input type="hidden" @bind="@id" />
-	<br />
-	<input placeholder="Naziv recepta" @bind="@name" />
-	<br />
-	<input placeholder="Opis recepta" @bind="@description" />
-	<br />
-	<button @onclick="@Update" class="btn btn-primary">Ažuriraj recept</button>
-	<span>&nbsp;&nbsp;&nbsp;&nbsp;</span> // RAZMACI
-	<button @onclick="@Delete" class="btn btn-danger">Obriši recept</button>
-}
 @code {
+    private string searchTerm = string.Empty;
+    private DateTime? fromDate;
+    private DateTime? toDate;
+    private List<Recipe> recipes = new();
+    private List<Ingredient> availableIngredients = new();
+    private List<string> selectedIngredientIds = new();
 
-	[CascadingParameter]
-	private Task<AuthenticationState> authenticationStateTask { get; set; }
+    private Dictionary<string, bool> recipeOwnership = new();
 
-	string id;
-	string name;
-	string description;
-	Recipe recipe;
-	private enum MODE { None, Add, EditDelete };
-	MODE mode = MODE.None;
+    protected override async Task OnInitializedAsync()
+    {
+        recipes = await recipeService.GetRecipesAsync();
+        availableIngredients = await ingredientService.GetIngredientsAsync();
+        var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
 
-	List<Recipe> recipes = new();
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            foreach (var recipe in recipes)
+            {
+                recipeOwnership[recipe.Id] = user.Identity.Name == recipe.User.Username;
+            }
+        }
+    }
 
-	private List<Ingredient> availableIngredients = new();
-	private List<string> selectedIngredientIds = new(); // Koji su sastojci odabrani
+    private async Task SearchRecipes()
+    {
+        recipes = await recipeService.SearchRecipesAsync(searchTerm, fromDate, toDate, selectedIngredientIds);
+    }
 
-	private double minScore = 0.0;
+    private void OnIngredientSelectionChanged(ChangeEventArgs e)
+    {
+        selectedIngredientIds = (e.Value as string[]).ToList();
+    }
 
-	private DateTime? fromDate;
-	private DateTime? toDate;
+    private void Add()
+    {
+        navigationManager.NavigateTo("/add-recipe");
+    }
 
-	private string searchTerm = string.Empty;
+    private void EditRecipe(string id)
+    {
+        navigationManager.NavigateTo($"/edit-recipe/{id}");
+    }
 
-	protected override async Task OnInitializedAsync()
-	{
-		await Load();
-	}
-	protected async Task Load()
-	{
-		recipes = await recipeService.GetRecipesAsync();
-		availableIngredients = await ingredientService.GetIngredientsAsync();
-	}
-
-	protected async Task SearchRecipes()
-	{
-		recipes = await recipeService.SearchRecipesAsync(searchTerm, fromDate, toDate, selectedIngredientIds, minScore > 0 ? minScore : null);
-	}
-
-	private void OnIngredientSelectionChanged(ChangeEventArgs e)
-	{
-		// Multi select specifično zato što je ID string
-		selectedIngredientIds = (e.Value as string[]).ToList();
-	}
-
-	protected void Add()
-	{
-		ClearFields();
-		mode = MODE.Add;
-	}
-	protected void ClearFields()
-	{
-		id = string.Empty;
-		name = string.Empty;
-		description = string.Empty;
-	}
-
-	protected async Task Insert()
-	{
-		Recipe r = new Recipe()
-			{
-				Id = Guid.NewGuid().ToString(),
-				Name = name,
-				Description = description
-			};
-		await recipeService.InsertRecipeAsync(r);
-		ClearFields();
-		await Load();
-		mode = MODE.None;
-	}
-
-	protected async Task Show(string id)
-	{
-		recipe = await recipeService.GetRecipeByIdAsync(id);
-		id = recipe.Id;
-		name = recipe.Name;
-		description = recipe.Description;
-		mode = MODE.EditDelete;
-	}
-
-	protected async Task Update()
-	{
-		Recipe r = new Recipe()
-			{
-				Id = recipe.Id,
-				Name = name,
-				Description = description
-			};
-		await recipeService.UpdateRecipeAsync(recipe.Id, r);
-		ClearFields();
-		await Load();
-		mode = MODE.None;
-	}
-	protected async Task Delete()
-	{
-		await recipeService.DeleteRecipeAsync(recipe.Id);
-		ClearFields();
-		await Load();
-		mode = MODE.None;
-	}
+    private void DeleteRecipe(string id)
+    {
+        recipeService.DeleteRecipeAsync(id);
+    }
 }

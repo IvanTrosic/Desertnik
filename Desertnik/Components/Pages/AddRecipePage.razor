@@ -1,0 +1,86 @@
+﻿@page "/add-recipe"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,User")]
+@inject RecipeService recipeService
+@inject IngredientService ingredientService
+@inject NavigationManager navigationManager
+@inject AuthenticationStateProvider authenticationStateProvider
+
+<h1 class="text-center mt-4">Dodaj recept</h1>
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <EditForm Model="@recipe" OnValidSubmit="HandleValidSubmit" FormName="AddRecipe">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label for="recipeName" class="form-label">Naziv recepta</label>
+                    <InputText id="recipeName" class="form-control" @bind-Value="recipe.Name" placeholder="Naziv recepta..." />
+                    <ValidationMessage For="@(() => recipe.Name)" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="recipeDescription" class="form-label">Opis recepta</label>
+                    <InputTextArea id="recipeDescription" class="form-control" @bind-Value="recipe.Description" rows="3" placeholder="Opis recepta..." />
+                    <ValidationMessage For="@(() => recipe.Description)" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="ingredients" class="form-label">Sastojci</label>
+                    <select id="ingredients" multiple class="form-select" @onchange="OnIngredientSelectionChanged">
+                        @foreach (var ingredient in availableIngredients)
+                        {
+                            <option value="@ingredient.Id">@ingredient.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Dodaj recept</button>
+                    <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel">Odustani</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    public RecipeModel recipe { get; set; } = new();
+
+    private List<Ingredient> availableIngredients = new();
+    private List<string> selectedIngredientIds = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load available ingredients
+        availableIngredients = await ingredientService.GetIngredientsAsync();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        // Assign selected ingredients to the recipe
+        var ingredients = availableIngredients
+            .Where(i => selectedIngredientIds.Contains(i.Id))
+            .ToList();
+
+        // Add the recipe
+        await recipeService.InsertRecipeAsync(recipe, ingredients, authenticationStateProvider);
+
+        // Navigate back to the recipe list
+        navigationManager.NavigateTo("/recipes");
+    }
+
+    private void OnIngredientSelectionChanged(ChangeEventArgs e)
+    {
+        selectedIngredientIds = (e.Value as string[])?.ToList() ?? new List<string>();
+    }
+
+    private void Cancel()
+    {
+        navigationManager.NavigateTo("/recipes");
+    }
+}

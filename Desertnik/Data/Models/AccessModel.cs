@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Desertnik.Data
+namespace Desertnik.Data.Models
 {
 	public class AccessModel
 	{

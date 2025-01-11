@@ -1,0 +1,90 @@
+﻿@page "/edit-recipe/{id}"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin,User")]
+@inject RecipeService recipeService
+@inject IngredientService ingredientService
+@inject NavigationManager navigationManager
+@inject AuthenticationStateProvider authenticationStateProvider
+
+<h1 class="text-center mt-4">Uredi recept</h1>
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <EditForm Model="@recipe" OnValidSubmit="HandleValidSubmit" FormName="EditRecipe">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label for="recipeName" class="form-label">Naziv recepta</label>
+                    <InputText id="recipeName" class="form-control" @bind-Value="recipe.Name" />
+                    <ValidationMessage For="@(() => recipe.Name)" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="recipeDescription" class="form-label">Opis recepta</label>
+                    <InputTextArea id="recipeDescription" class="form-control" @bind-Value="recipe.Description" rows="3" />
+                    <ValidationMessage For="@(() => recipe.Description)" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="ingredients" class="form-label">Sastojci</label>
+                    <select id="ingredients" multiple class="form-select" @onchange="(e) => selectedIngredientIds = (e.Value as string[])?.ToList() ?? new List<string>()">
+                        @foreach (var ingredient in availableIngredients)
+                        {
+                            <option value="@ingredient.Id" selected="@selectedIngredientIds.Contains(ingredient.Id)">@ingredient.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Spremi</button>
+                    <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel">Odustani</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = string.Empty;
+
+    private Recipe recipe = new Recipe();
+    private List<Ingredient> availableIngredients = new();
+    private List<string> selectedIngredientIds = new();
+    private bool isOwner = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        recipe = await recipeService.GetRecipeByIdAsync(Id);
+        availableIngredients = await ingredientService.GetIngredientsAsync();
+
+        // Check ownership
+        var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        isOwner = user.Identity?.IsAuthenticated == true &&
+                  user.Identity.Name == recipe.User.Username;
+
+        // If the user is not the owner and not an Admin, redirect
+        if (!isOwner && !user.IsInRole("Admin"))
+        {
+            navigationManager.NavigateTo("/access-denied");
+        }
+
+        // Populate selected ingredients
+        selectedIngredientIds = recipe.Ingredients.Select(i => i.Id).ToList();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        recipe.Ingredients = availableIngredients.Where(i => selectedIngredientIds.Contains(i.Id)).ToList();
+        await recipeService.UpdateRecipeAsync(recipe.Id, recipe);
+        navigationManager.NavigateTo("/recipes");
+    }
+
+    private void Cancel()
+    {
+        navigationManager.NavigateTo("/recipes");
+    }
+}

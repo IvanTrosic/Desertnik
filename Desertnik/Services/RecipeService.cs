@@ -1,4 +1,6 @@
 ﻿using Desertnik.Data;
+using Desertnik.Data.Models;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace Desertnik.Services
@@ -12,18 +14,38 @@ namespace Desertnik.Services
 		}
 		public async Task<List<Recipe>> GetRecipesAsync()
 		{
-			var result = _context.Recipes.Include(recipe => recipe.Ingredients);
+			var result = _context.Recipes.Include(recipe => recipe.Ingredients).Include(recipe => recipe.User);
 			return await Task.FromResult(result.ToList());
 		}
 		public async Task<Recipe> GetRecipeByIdAsync(string id)
 		{
-			return await _context.Recipes.FindAsync(id);
+			return await _context.Recipes.Include(recipe => recipe.User).FirstOrDefaultAsync(r => r.Id == id);
 		}
-		public async Task<Recipe> InsertRecipeAsync(Recipe recipe)
+		public async Task<Recipe> InsertRecipeAsync(RecipeModel recipe, List<Ingredient> ingredients, AuthenticationStateProvider authenticationStateProvider)
 		{
-			_context.Recipes.Add(recipe);
-			await _context.SaveChangesAsync();
-			return recipe;
+
+			var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
+			var claimsPrincipal = authState.User;
+			if (claimsPrincipal.Identity is not null && claimsPrincipal.Identity.IsAuthenticated)
+			{
+				var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == claimsPrincipal.Identity.Name);
+
+				var newRecipe = new Recipe
+				{
+					Id = Guid.NewGuid().ToString(),
+					Name = recipe.Name,
+					Description = recipe.Description,
+					Ingredients = ingredients,
+					User = user
+				};
+				_context.Recipes.Add(newRecipe);
+				await _context.SaveChangesAsync();
+				return newRecipe;
+			}
+			else
+			{
+				return null;
+			}
 		}
 		public async Task<Recipe> UpdateRecipeAsync(string id, Recipe r)
 		{
@@ -32,6 +54,7 @@ namespace Desertnik.Services
 				return null;
 			recipe.Name = r.Name;
 			recipe.Description = r.Description;
+			recipe.Ingredients = r.Ingredients;
 			_context.Recipes.Update(recipe);
 			await _context.SaveChangesAsync();
 			return recipe;
@@ -45,12 +68,8 @@ namespace Desertnik.Services
 			await _context.SaveChangesAsync();
 			return recipe;
 		}
-		private bool RecipeExists(string id)
-		{
-			return _context.Recipes.Any(e => e.Id == id);
-		}
 
-		public async Task<List<Recipe>> SearchRecipesAsync(string? name, DateTime? fromDate, DateTime? toDate, List<string>? ingredientIds, double? minScore)
+		public async Task<List<Recipe>> SearchRecipesAsync(string? name, DateTime? fromDate, DateTime? toDate, List<string>? ingredientIds)
 		{
 			var query = _context.Recipes.AsQueryable();
 
@@ -62,11 +81,11 @@ namespace Desertnik.Services
 
 			// Po datumu
 			if (fromDate.HasValue)
-			{ 
+			{
 				query = query.Where(r => r.CreatedDate >= fromDate.Value);
 			}
 			if (toDate.HasValue)
-			{ 
+			{
 				query = query.Where(r => r.CreatedDate <= toDate.Value);
 			}
 
@@ -76,13 +95,7 @@ namespace Desertnik.Services
 				query = query.Where(r => r.Ingredients.Any(i => ingredientIds.Contains(i.Id)));
 			}
 
-			// Po ocjenama
-			if (minScore.HasValue)
-			{
-				query = query.Where(r => r.AverageScore >= minScore.Value);
-			}
-
-			return await query.Include(r => r.Ingredients).ToListAsync();
+			return await query.Include(r => r.Ingredients).Include(recipe => recipe.User).ToListAsync();
 		}
 	}
 }

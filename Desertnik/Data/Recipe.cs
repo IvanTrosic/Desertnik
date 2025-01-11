@@ -7,7 +7,6 @@
 		public string Description { get; set; } = string.Empty;
 		public List<Ingredient> Ingredients { get; set; } = [];
 		public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
-		public double AverageScore { get; set; }
 		public User User { get; set; } // Korisnik koji je napisao recept
 
 	}
