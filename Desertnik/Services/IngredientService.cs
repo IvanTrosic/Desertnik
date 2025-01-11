@@ -1,5 +1,4 @@
 ﻿using Desertnik.Data;
-using Microsoft.EntityFrameworkCore;
 
 namespace Desertnik.Services
 {
@@ -39,10 +38,6 @@ namespace Desertnik.Services
 			_context.Ingredients.Remove(ingredient);
 			await _context.SaveChangesAsync();
 			return ingredient;
-		}
-		private bool IngredientExists(string id)
-		{
-			return _context.Ingredients.Any(e => e.Id == id);
 		}
 	}
 }

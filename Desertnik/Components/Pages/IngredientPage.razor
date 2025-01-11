@@ -1,0 +1,72 @@
+﻿@page "/ingredients"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+@inject IngredientService ingredientService
+
+<h1 class="text-center mt-4">Upravljanje sastojcima</h1>
+<div class="container mt-4">
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <input class="form-control" placeholder="Ime novog sastojka" @bind="newIngredientName" />
+        </div>
+        <div class="col-md-6">
+            <button class="btn btn-success" @onclick="AddIngredient">Dodaj sastojak</button>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Naziv</th>
+                    <th>Uredi/Obriši</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var ingredient in ingredients)
+                {
+                    <tr>
+                        <td>
+                            <input class="form-control" @bind="ingredient.Name" />
+                        </td>
+                        <td>
+                            <button class="btn btn-success btn-sm" @onclick="() => UpdateIngredient(ingredient)">Uredi</button>
+                            <button class="btn btn-danger btn-sm" @onclick="() => DeleteIngredient(ingredient.Id)">Obriši</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private List<Ingredient> ingredients = new();
+    private string newIngredientName = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ingredients = await ingredientService.GetIngredientsAsync();
+    }
+
+    private async Task AddIngredient()
+    {
+        if (!string.IsNullOrWhiteSpace(newIngredientName))
+        {
+            await ingredientService.InsertIngredientAsync(new Ingredient { Id = Guid.NewGuid().ToString(), Name = newIngredientName });
+            ingredients = await ingredientService.GetIngredientsAsync();
+            newIngredientName = string.Empty;
+        }
+    }
+
+    private async Task UpdateIngredient(Ingredient ingredient)
+    {
+        await ingredientService.UpdateIngredientAsync(ingredient.Id, ingredient);
+    }
+
+    private async Task DeleteIngredient(string ingredientId)
+    {
+        await ingredientService.DeleteIngredientAsync(ingredientId);
+        ingredients = await ingredientService.GetIngredientsAsync();
+    }
+}
