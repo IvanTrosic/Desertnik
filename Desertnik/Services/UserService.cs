@@ -70,12 +70,21 @@ namespace Desertnik.Services
 
 		public async Task DeleteUserAsync(string userId)
 		{
-			var user = await _context.Users.FindAsync(userId);
-			if (user != null)
-			{
-				_context.Users.Remove(user);
-				await _context.SaveChangesAsync();
-			}
+			var userRecipes = _context.Recipes.Where(r => r.User.Id == userId);
+
+			_context.Recipes.RemoveRange(userRecipes);
+
+			var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+			if (user == null)
+				return;
+
+			_context.Users.Remove(user);
+
+			await _context.SaveChangesAsync();
+
+			return;
 		}
+
 	}
 }
