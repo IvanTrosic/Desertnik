@@ -14,6 +14,7 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(buil
 builder.Services.AddScoped<RecipeService>();
 builder.Services.AddScoped<IngredientService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<ToastService>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

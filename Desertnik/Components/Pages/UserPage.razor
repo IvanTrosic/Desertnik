@@ -4,6 +4,7 @@
 @attribute [Authorize(Roles = "Admin")]
 @inject UserService userService
 @inject NavigationManager navigationManager
+@inject ToastService toastService
 
 <h1 class="text-center mt-4">Upravljanje korisnicima</h1>
 <div class="container mt-4">
@@ -51,6 +52,7 @@
     private async Task UpdateUser(User user)
     {
         await userService.UpdateUserAsync(user.Id, user.Username, user.Role);
+        toastService.ShowToast("Korisnik ažuriran!", "USPJEŠNO", 3);
         users = await userService.GetAllUsersAsync();
     }
 

@@ -3,6 +3,7 @@
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize(Roles = "Admin, User")]
 @inject IngredientService ingredientService
+@inject ToastService toastService
 
 <h1 class="text-center mt-4">Upravljanje sastojcima</h1>
 <div class="container mt-4">
@@ -62,6 +63,7 @@
     private async Task UpdateIngredient(Ingredient ingredient)
     {
         await ingredientService.UpdateIngredientAsync(ingredient.Id, ingredient);
+        toastService.ShowToast("Sastojak ažuriran!", "USPJEŠNO", 3);
     }
 
     private async Task DeleteIngredient(string ingredientId)
