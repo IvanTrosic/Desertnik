@@ -9,5 +9,6 @@ namespace Desertnik.Data.Models
 
 		[Required(AllowEmptyStrings = false, ErrorMessage = "Opis recepta je obavezan")]
 		public string? Description { get; set; }
+		public string? ImageUrl { get; set; }
 	}
 }

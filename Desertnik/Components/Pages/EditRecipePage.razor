@@ -37,6 +37,12 @@
                     </select>
                 </div>
 
+                <div class="mb-3">
+                    <label for="imageUrl" class="form-label">Image URL</label>
+                    <InputText id="imageUrl" class="form-control" @bind-Value="recipe.ImageUrl" />
+                    <ValidationMessage For="@(() => recipe.ImageUrl)" />
+                </div>
+
                 <div class="mt-4">
                     <button type="submit" class="btn btn-primary">Spremi</button>
                     <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel">Odustani</button>

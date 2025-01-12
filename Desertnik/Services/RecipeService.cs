@@ -36,7 +36,8 @@ namespace Desertnik.Services
 					Name = recipe.Name,
 					Description = recipe.Description,
 					Ingredients = ingredients,
-					User = user
+					User = user,
+					ImageUrl = string.IsNullOrEmpty(recipe.ImageUrl) ? "https://upload.wikimedia.org/wikipedia/commons/9/95/Nema_slike.png" : recipe.ImageUrl
 				};
 				_context.Recipes.Add(newRecipe);
 				await _context.SaveChangesAsync();
@@ -55,6 +56,7 @@ namespace Desertnik.Services
 			recipe.Name = r.Name;
 			recipe.Description = r.Description;
 			recipe.Ingredients = r.Ingredients;
+			recipe.ImageUrl = r.ImageUrl = string.IsNullOrEmpty(r.ImageUrl) ? "https://upload.wikimedia.org/wikipedia/commons/9/95/Nema_slike.png" : r.ImageUrl;
 			_context.Recipes.Update(recipe);
 			await _context.SaveChangesAsync();
 			return recipe;

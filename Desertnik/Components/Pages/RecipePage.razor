@@ -52,6 +52,13 @@
                 <div class="col-md-4 mb-4">
                     <div class="card">
                         <div class="card-body">
+                            @if (!string.IsNullOrEmpty(recipe.ImageUrl))
+                            {
+                                <div class="d-flex justify-content-center align-items-center" style="height: 25em;">
+                                    <img src="@recipe.ImageUrl" alt="Slika recepta" class="img-fluid mb-2"
+                                         style="object-fit:contain; width:20em; height:20em;" />
+                                </div>
+                            }
                             <h5 class="card-title">@recipe.Name</h5>
                             <p class="card-text">@recipe.Description</p>
                             <p class="card-text">
