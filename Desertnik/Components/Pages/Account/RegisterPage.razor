@@ -31,18 +31,22 @@
     [SupplyParameterFromForm]
     public AccessModel RegisterModel { get; set; } = new();
 
+    [CascadingParameter]
+    public HttpContext? HttpContext { get; set; }
+
     private string? errorMessage;
 
     private async Task Register()
     {
-        var success = await userService.RegisterAsync(RegisterModel.Username, RegisterModel.Password);
-        if (success)
+        var principal = await userService.RegisterAsync(RegisterModel.Username, RegisterModel.Password);
+        if (principal != null)
         {
-            navigationManager.NavigateTo("/login");
+            await HttpContext.SignInAsync(principal);
+            navigationManager.NavigateTo("/");
         }
         else
         {
-            errorMessage = "Korisničko ime već postoji";
+            errorMessage = "Username already exists.";
         }
     }
 }

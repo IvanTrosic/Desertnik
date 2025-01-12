@@ -14,10 +14,10 @@ namespace Desertnik.Services
 			_context = context;
 		}
 
-		public async Task<bool> RegisterAsync(string username, string password)
+		public async Task<ClaimsPrincipal> RegisterAsync(string username, string password)
 		{
 			if (_context.Users.Any(u => u.Username == username))
-				return false; // Korisnik već postoji
+				return null; // Korisnik već postoji
 
 			_context.Users.Add(new User
 			{
@@ -28,7 +28,17 @@ namespace Desertnik.Services
 			});
 
 			await _context.SaveChangesAsync();
-			return true;
+
+			var claims = new List<Claim>
+			{
+				new Claim(ClaimTypes.Name, username),
+				new Claim(ClaimTypes.Role, "User")
+			};
+
+			var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+			var principal = new ClaimsPrincipal(identity);
+
+			return principal;
 		}
 
 		public async Task<ClaimsPrincipal?> LoginAsync(string username, string password)
